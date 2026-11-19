@@ -1,7 +1,35 @@
 {
-  "name": "prototyping-kit",
-  "private": true,
+  "name": "uxagent",
+  "version": "0.1.0",
+  "description": "Design-system guardrails and agent skills for prototyping with AI agents, installed into any repo.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.22"
+  },
+  "bin": {
+    "uxagent": "bin/uxagent.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./stylelint": "./src/validate/editor-config.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "src",
+    "agents",
+    "templates",
+    "schema",
+    "README.md"
+  ],
   "scripts": {
-    "ds-export": "node Agents/skills/design-system-export/scripts/export.mjs"
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "test:docs": "node test/docs/links.mjs && node test/docs/docs-agree.mjs"
+  },
+  "dependencies": {
+    "postcss-html": "2.0.0",
+    "postcss-selector-parser": "7.1.0",
+    "postcss-value-parser": "4.2.0",
+    "stylelint": "18.0.0"
   }
 }

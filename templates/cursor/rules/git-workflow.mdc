@@ -1,0 +1,15 @@
+---
+description: Keep each track of work organized in git
+alwaysApply: true
+---
+
+Keep each track of work recognizable in its branch, commits, and pull request.
+
+- A new thread starts a new branch from an up-to-date `main`. Use another base only when the user specifies one. Stay on the current branch only when the user says to keep working on it.
+- If the repo is already dirty with work this chat did not create, ask what to do before branching, committing, or switching. Leave that work untouched until the user answers.
+- Once the branch for this chat is clear, commit and push without a separate ask. Never commit directly to `main` or `staging` unless this chat was told to work on that branch.
+- Do not open a pull request unless asked in that turn.
+
+Branch naming, commit style, and worktrees live in `{{doc:context/git-workflow.md}}`. Read it before creating a branch or committing.
+
+Managed by uxagent; `npx uxagent sync` rewrites this file.

@@ -1,0 +1,17 @@
+---
+description: Design-system rules for token-driven styling
+globs: {{source}}/**
+alwaysApply: false
+---
+
+Auto-attaches when editing components, styles, or token pipeline files. Before editing,
+read:
+
+- Styling rules, token discovery, deviation handling, component variants:
+  `{{doc:context/design-system.md}}`
+- How this project implements them: `ux/architecture.md`
+<!-- if:tokens -->
+- Token pipeline and the alpha regression guard: `{{doc:skills/design-tokens/SKILL.md}}`
+<!-- endif -->
+
+Managed by uxagent; `npx uxagent sync` rewrites this file.

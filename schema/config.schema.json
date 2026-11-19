@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/morgankeys/ux-agent/schema/config.schema.json",
+  "title": "uxagent config (ux/config.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1, "description": "Config format version." },
+    "preset": {
+      "enum": ["greenfield", "existing"],
+      "description": "greenfield: a new repo, uxagent sets up everything. existing: an existing codebase; its own git, CI, lint, and pull request conventions stay in charge (the `repo` module is off)."
+    },
+    "agents": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["claude", "cursor", "copilot", "gemini"] },
+      "description": "Agent tools uxagent writes entry files, skill stubs, and rules for. AGENTS.md is always written."
+    },
+    "agentFiles": {
+      "enum": ["package"],
+      "description": "Where agents read uxagent's skills from. Only `package` (node_modules) is supported today."
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Folders, relative to the project root.",
+      "properties": {
+        "designSystem": { "type": "string", "default": "design-system", "description": "The design-system folder: token sources, guidelines, usage map, backlog, exports." },
+        "source": { "type": "string", "default": "src", "description": "Where the components and styles live." },
+        "exports": { "type": "string", "description": "Where exports are written. Default: <designSystem>/exports." }
+      }
+    },
+    "figma": {
+      "description": "The project's Figma files, or false when it doesn't use Figma. A null link is undecided.",
+      "oneOf": [
+        { "const": false },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "site": { "type": ["string", "null"], "description": "Link to the file with the pages and features to build." },
+            "library": { "type": ["string", "null"], "description": "Link to the library file: core styles and components. Tokens are exported from here." }
+          }
+        }
+      ]
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The project's real command for each role. null: not wired yet. \"n/a\": the project will never have it.",
+      "properties": {
+        "dev": { "type": ["string", "null"], "description": "Start the local dev server. The only place dev-only pages render." },
+        "build": { "type": ["string", "null"], "description": "Produce the production build. Runs `tokens` first, the alpha regression guard, and the dev-only pages guard." },
+        "lint": { "type": ["string", "null"], "description": "Formatting check, code lint, and CSS validity. Technical only." },
+        "check": { "type": ["string", "null"], "description": "Type or template check, if the stack has one." },
+        "tokens": { "type": ["string", "null"], "description": "Unpack the token source and regenerate the token CSS." },
+        "validate": { "type": ["string", "null"], "description": "Design-system validation. Usually `npx uxagent validate`." },
+        "stories": { "type": ["string", "null"], "description": "Start the component workbench locally." },
+        "stories-build": { "type": ["string", "null"], "description": "Build the workbench and check every story renders." },
+        "connect": { "type": ["string", "null"], "description": "Validate the Figma Code Connect files without publishing." }
+      }
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Turn a part of uxagent on or off. Each is on unless the preset or this key says otherwise.",
+      "properties": {
+        "tokens": { "type": "boolean", "description": "The token pipeline skill and the alpha guard." },
+        "validator": { "type": "boolean", "description": "validate, the deviations backlog, and the token usage review." },
+        "dev-pages": { "type": "boolean", "description": "The dev-only pages guard." },
+        "figma": { "type": "boolean", "description": "Figma MCP, the capture button, and Code Connect." },
+        "catalog": { "type": "boolean", "description": "The component workbench (Storybook)." },
+        "export": { "type": "boolean", "description": "DESIGN.md and the platform packages." },
+        "repo": { "type": "boolean", "description": "Git workflow, /pr, GitHub settings, the CI skeleton, lint requirements, and /editor-setup." }
+      }
+    },
+    "skills": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" },
+      "description": "Set a skill to false to leave it out, for example { \"pr\": false }."
+    },
+    "validate": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Settings for `npx uxagent validate`. Paths and globs are relative to the project root.",
+      "properties": {
+        "include": {
+          "type": ["array", "null"], "items": { "type": "string" },
+          "description": "Globs of the style and component files to check. Default: <paths.source>/**/*.{css,svelte,vue,astro}."
+        },
+        "ignore": { "type": "array", "items": { "type": "string" }, "default": ["**/node_modules/**"], "description": "Globs never checked." },
+        "tokenFiles": { "type": "array", "items": { "type": "string" }, "description": "The generated token CSS. Never checked." },
+        "globalStylesheets": { "type": "array", "items": { "type": "string" }, "description": "The global stylesheet: element defaults, type settings, resets, :root. Usually one file." },
+        "manifest": { "type": ["string", "null"], "description": "The token manifest that `tokens` writes. Without it, Figma scope checks are off." },
+        "allowedGlobalClasses": {
+          "type": "array",
+          "description": "Utility classes that really are meant for use anywhere. Adding one is the design-system owner's decision; never add one to clear a scoping error.",
+          "items": {
+            "type": "object", "required": ["class", "for"], "additionalProperties": false,
+            "properties": { "class": { "type": "string" }, "for": { "type": "string" } }
+          }
+        },
+        "allowedValues": {
+          "type": "array", "items": { "type": "string" },
+          "description": "Extra literal values the value rules ignore, on top of 0, auto, inherit, initial, unset, revert, revert-layer, transparent, currentcolor, and none."
+        },
+        "allowedVariables": {
+          "type": "array", "items": { "type": "string" },
+          "description": "Non-token CSS variables a framework or tool sets, as name patterns (`*` matches any run of characters), for example \"--tw-*\"."
+        },
+        "exemptions": {
+          "type": "array",
+          "description": "Files allowed to break specific deviation rules. Scoping errors can't be exempted.",
+          "items": {
+            "type": "object", "required": ["files", "rules", "why"], "additionalProperties": false,
+            "properties": {
+              "files": { "type": ["string", "array"], "items": { "type": "string" } },
+              "rules": { "type": ["string", "array"], "items": { "type": "string" } },
+              "why": { "type": "string" }
+            }
+          }
+        },
+        "namespace": { "type": "string", "description": "Overrides the token namespace. Normally it comes from `namespace` in the token usage map." },
+        "componentExtensions": {
+          "type": "object",
+          "additionalProperties": { "enum": ["svelte", "vue", "astro"] },
+          "description": "Extra component file extensions, each mapped to the framework whose style-block rules it follows."
+        }
+      }
+    }
+  }
+}
