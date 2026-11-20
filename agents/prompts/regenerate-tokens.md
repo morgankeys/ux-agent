@@ -1,0 +1,33 @@
+# Regenerate tokens from a new export
+
+Bring a fresh token export into the project and land it as a reviewable change. Figma
+variables are the default source; the inputs below assume that export.
+
+## Goal
+
+The generated token CSS matches the new Figma export, the build passes with the alpha
+guard intact, and the deviations backlog is current.
+
+## Inputs
+
+- `<exports>`: the `.zip` files exported from the Figma library file.
+- `<what changed>`: optional note from the designer on which sets or tokens changed.
+
+## Steps
+
+1. Create a `tokens/<slug>` branch per [`git-workflow.md`](../context/git-workflow.md) if the project uses uxagent's git
+   workflow, otherwise per the project's own conventions.
+2. Follow [`design-tokens`](../skills/design-tokens/SKILL.md) from "Place the export" through
+   "Run `validate`".
+3. Summarize the token diff: tokens added, removed, renamed, and changed in value. Call out
+   any token with `alpha < 1` that changed.
+4. Fix components that referenced removed or renamed tokens; log anything you cannot fix
+   in the backlog with a rationale.
+5. Commit the token regeneration and any component fixes as separate commits, then push the
+   feature branch. Do not open a pull request unless asked.
+
+## Done when
+
+- `build` passes, including the alpha regression guard.
+- `validate` has been run and the backlog is committed.
+- Your reply lists the token changes and any new deviations.

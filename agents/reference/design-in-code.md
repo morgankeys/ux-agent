@@ -1,0 +1,318 @@
+# Guidelines for implementing the design system in code
+
+The following are general requirements for how the design system should be architected in
+code, whatever the stack. These principles are enforced by the design-system validator;
+[Validation and linting](#validation-and-linting) says which check owns what.
+
+* There is a global variables file, built directly from the source-of-truth tokens. A Figma
+  variables export is the default source; the same file is built when tokens are maintained
+  in this project, another repository, or another design tool.
+* There is a global CSS file that contains a minimal set of universal styles. For example,
+  type settings.
+* Component styles should be contained and scoped to the component itself. Every style is
+  either global or a component's, and lives only in that one place. See
+  [Scoping: global or component](#scoping-global-or-component).
+* Raw or hardcoded CSS values should be minimized. Wherever possible, token-based variables
+  should be used.
+* Each token is used for its intended purpose, as recorded in the token source and the
+  token usage map. See [Token usage](#token-usage).
+* There is a design-system validation script/mechanism (run either automatically or
+  on-demand) that assesses code based on these principles and generates a list of
+  identified deviations.
+* Code linting runs alongside validation and covers technical correctness only. It does
+  not enforce these principles.
+
+## Validation and linting
+
+The one place this split is written down; other files link here.
+
+- **`validate` owns every design-system finding**: hardcoded values, tokens used outside
+  their purpose, and unscoped or leaking styles. Most findings are deviations: each is
+  written to the backlog, and none fails `validate` or CI. The exception is a **scoping
+  error** (a style in the wrong place, global or component), which fails both (see
+  [Scoping: global or component](#scoping-global-or-component) and
+  [Exit codes and CI](#exit-codes-and-ci)).
+- **`lint` owns technical correctness only**: formatting, code lint, and CSS validity
+  (syntax errors, unknown properties, invalid values). Its findings are errors, they fail
+  CI, and the agent fixes them. No rule in `lint` requires a token or forbids a literal
+  value.
+
+Why one owner: a deviation logged with its rationale is handled. If `lint` flagged the
+same value as an error, it would fail CI with no legitimate way through.
+
+The validator uxagent ships runs on Stylelint, so the two share an engine, not a config or
+an exit code: `lint`'s config never loads the design-system rules, and
+`validate` decides its own exit code.
+
+Both always run. The hard failures that protect the design system are the alpha
+regression guard and the dev-only pages guard, both in `build`; scoping errors, in
+`validate`; and the stale-backlog check in CI.
+
+Which linters a project can use, and why the token-only Stylelint plugin is not one of them:
+[`tooling.md`](tooling.md#stylelint).
+
+## Validator contract
+
+Any validator, in any language or on any engine, implements these rules. uxagent ships a
+tested implementation, custom Stylelint rules behind `npx uxagent validate`, so a project
+does not copy or adapt it
+([`/design-validator`](../skills/design-validator/SKILL.md) wires it to the project; tool
+notes: [`tooling.md`](tooling.md#design-system-validator)). A project that cannot use it
+(it has no Node at all) writes its own validator to this contract. In uxagent, a change to
+this contract changes the validator and its tests in the same change. Each finding becomes
+one backlog entry with a rule id, a line, and a detail string. Rule ids below are suggestions; keep
+them stable once chosen, because rationale is matched on them.
+
+| Rule | Flags |
+| --- | --- |
+| `hardcoded-color` | A literal color (hex, `rgb()`, `hsl()`, named) in a color property **or** a color-bearing shorthand (`border*`, `outline`, `background*`, `box-shadow`, `text-shadow`), including as a `var()` fallback. |
+| `raw-spacing` | A raw length in `margin`, `padding`, `gap`, `row-gap`, or `column-gap`, including one mixed with a token or inside `calc()`. |
+| `raw-border-radius` | A raw length in `border-radius` or its longhands. |
+| `non-token-font-family` | A `font-family` that does not resolve through a token. |
+| `raw-font-size` | A raw length in `font-size`. |
+| `raw-typography` | A literal `font-weight`, `line-height`, or `letter-spacing`. |
+| `non-token-variable` | A CSS variable outside the project's token namespace (`--<prefix>-*`). |
+| `local-token-override` | A component redefining a namespace token with a literal value. |
+| `unscoped-style` | **Scoping error.** A style block in a component file that is not scoped, or an escape to global scope (`:global()` and the like) that is not nested under one of the component's own selectors. |
+| `global-component-leak` | **Scoping error.** A rule in the global stylesheet whose selector targets a component: a class, an id, or a `data-component` or variant attribute, unless the class is on the allowed global classes list. |
+
+Allowed values the rules ignore (`0`, `inherit`, `auto`, `transparent`, `currentcolor`, and
+so on), explicit exemptions (a file that defines primitives the export lacks), how the
+validator finds component style blocks, which file is the global stylesheet, and where the
+allowed global classes list lives are project decisions. They are set under `validate` in
+`ux/config.json` (`exemptions`, `globalStylesheets`, `allowedGlobalClasses`, and so on) and
+explained in `ux/architecture.md`.
+
+The two rules marked **scoping error** are not deviations. `validate` reports them
+separately, never writes them to the backlog, and exits 1 when any exists.
+
+### Scoping: global or component
+
+Every style is one of two kinds, and each kind has one home.
+
+| Kind | What it is | Where it lives |
+| --- | --- | --- |
+| **Global** | Meant to apply everywhere: element defaults (`html`, `body`, headings, links, form controls), type settings, resets, `:root` (including a theme switch such as `:root[data-theme="dark"]`), `@font-face`, and the import of the generated token CSS. | Only the global stylesheet. |
+| **Component** | Belongs to one component: anything that targets it by class, id, or `data-component` and variant attributes. | Only that component's scoped style block. |
+
+The validator tells them apart by selector, not only by file:
+
+- **In the global stylesheet,** a rule is global when every selector in it targets
+  elements, `*`, or `:root` (with pseudo-classes, pseudo-elements, and attributes on
+  `html` or `:root`). A class, id, or `data-component` selector is component styling in the
+  wrong place: `global-component-leak`.
+- **The allowed global classes list** covers the few utility classes that really are meant
+  for use anywhere, such as a visually hidden helper for screen-reader text. Each entry
+  names the class and what it is for. Adding one is a design-system decision for the
+  owner, held to the same standard as the usage map: never add a class to clear an error.
+- **In a component file,** every style block is scoped. A framework escape to global scope
+  is fine nested under the component's own selector (`.card :global(p)` styles text
+  rendered inside the card) and an error on its own (`:global(p)` styles every paragraph):
+  `unscoped-style`.
+
+**Fixing a scoping error** means moving the style to its home. A component's style moves
+into its scoped block. A style that really should apply everywhere moves into the global
+stylesheet, as an element rule, or as an allowed global class once the owner agrees. When
+it is unclear which kind a style is, that is a design question: ask the user. Rationale
+never excuses a scoping error, because a style in the wrong place changes pages it was not
+written for.
+
+The validator also implements the backlog interface below: regenerate, carry rationale
+forward, write only on change, and the exit codes under [Exit codes and CI](#exit-codes-and-ci).
+
+## Token usage
+
+The rules above check that code uses tokens. The rules here check that it uses each token
+**for what it is meant for**: a spacing token in `font-size`, an `on-primary` text color as
+a background, or a hover state layer on a resting element all pass the rules above and
+still break the system.
+
+Intended use is checked in three layers, most deterministic first. Each layer handles only
+what the one before it cannot.
+
+| Layer | Source of intent | Checked by | Findings go to |
+| --- | --- | --- | --- |
+| 1. Token source | Figma variable scopes (`$extensions` → `com.figma.scopes`) and `$description` | `validate` | The deviations backlog |
+| 2. Usage map | `design-system/token-usage.json`, hand-maintained | `validate` | The deviations backlog |
+| 3. Semantic review | Token names, descriptions, the usage map's `intent` lines, and `design-system/guidelines/` | An agent, with the [`token-usage-review`](../skills/token-usage-review/SKILL.md) skill | `design-system/token-usage-review.md` |
+
+When the agent review keeps finding the same kind of misuse, the fix is to encode it in
+layer 1 or 2 so `validate` catches it from then on. The review exists for what can't be
+expressed as a pattern.
+
+### Layer 1: the token source
+
+A Figma variable records where it may be applied: its scopes (`TEXT_FILL`, `GAP`,
+`CORNER_RADIUS`, …) are set by the designer in the variable's settings and exported with it.
+`tokens` writes a generated **token manifest** next to the token CSS, one entry per CSS
+variable:
+
+```json
+{
+  "--<prefix>-color-on-primary": {
+    "type": "color",
+    "collection": "Color",
+    "scopes": ["TEXT_FILL", "STROKE_COLOR"],
+    "description": "Text and icons on primary.",
+    "aliasOf": "--<prefix>-ref-palette-primary-100"
+  }
+}
+```
+
+`scopes` and `description` come straight from the export; omit what the source lacks.
+`aliasOf` is set when the token's value references another token. Tokens from outside
+Figma can supply the same fields. Where the manifest lives is set by `validate.manifest` in `ux/config.json`. It is generated: never hand-edit it.
+
+The usage map's `figmaScopes` table translates each scope into CSS properties. A token
+whose scopes are `ALL_SCOPES`, or empty, has no restriction from this layer.
+
+Setting scopes in Figma is the cheapest way to make intent checkable, and it also keeps the
+token out of the wrong pickers for designers. Prefer it to a usage-map entry whenever a
+scope can express the rule.
+
+### Layer 2: the usage map
+
+`design-system/token-usage.json` records intent that scopes can't: which selectors a
+token belongs in, which tokens pair with which, and which tokens are not for direct use. It
+is authored by the design-system owner. `init` seeds an example for a Material-style
+system; replace it with the project's own groups.
+
+- **`namespace`**: the token prefix, without dashes. Patterns below are written after
+  `--<namespace>-`.
+- **`propertySets`**: named property lists, referenced as `@name`. A trailing `*` in a
+  property matches any longhand (`padding*` matches `padding-inline-start`), and a `*`
+  inside one matches one or more segments (`border-*-radius` matches `border-top-left-radius`).
+- **`figmaScopes`**: scope → property list, used by layer 1.
+- **`groups`**: ordered; **the first group whose `match` fits a token wins.** Put specific
+  groups above general ones. Each group has:
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Stable name, quoted in findings. Renaming it drops carried-forward rationale. |
+| `match` | Name pattern. `*` matches any run of characters. `{name}` captures one or more hyphen-separated segments, as many as still let the pattern match, for use in `pairs` and `intent`. |
+| `collection` | Optional. The group only matches tokens from this manifest collection. |
+| `intent` | One line saying what the token is for. Read by the agent review; not checked. |
+| `properties` | The CSS properties the token may appear in. Omitted means no restriction from this group. |
+| `direct` | `false` means the token is never used in component code, only through other tokens. |
+| `selectors` | Optional. The token may only appear in a rule whose selector contains one of these strings. |
+| `pairs` | Optional. Each entry is `{ properties, tokens }`: when the same rule block sets one of `properties` from a namespace token, that token must match one of the `tokens` patterns. `{name}` is filled in from the token's own match. |
+
+### Usage rules
+
+`validate` implements these alongside the rules in the [validator contract](#validator-contract).
+They apply to every namespace token referenced in a declaration's value, including inside
+`calc()` and as a `var()` fallback, in every file the validator scans except the generated
+token files. A declaration that defines a custom property is skipped, because its target
+property is not known there.
+
+| Rule | Flags |
+| --- | --- |
+| `token-wrong-property` | A token in a property outside its Figma scopes, or outside its usage-map group's `properties`. A token must pass both when both apply. |
+| `token-not-for-direct-use` | A token whose group sets `direct: false`. |
+| `token-wrong-context` | A token whose group sets `selectors`, in a rule whose selector contains none of them. |
+| `token-unpaired` | A rule block whose tokens break a group's `pairs`, such as `on-primary` text on a `surface` background. Only declarations in the same block are compared. |
+| `token-unclassified` | A token with no restricting scope and no usage-map group: nothing records what it is for. |
+
+Detail strings name the token, the property, and the group or scopes, and nothing that
+changes when unrelated map entries change, so rationale carries forward. For example:
+`` `--<prefix>-spacing-md` in `font-size` is outside group `spacing`. ``
+
+`validate` also prints, without adding to the backlog, a warning for each usage-map group
+that matches no token in the manifest. After an export renames tokens, that is the sign the
+map needs updating.
+
+The usage map is held to the same standard as the validator's rules: **never widen a group** (add a
+property, a selector, or a pair) to make a deviation disappear. Widening is a design-system
+decision for the owner. Until it is made, the deviation stays in the backlog with its
+rationale.
+
+### Layer 3: semantic review
+
+Some misuse depends on meaning no pattern captures: the primary color on a decorative
+element, a `display` type role on body copy, `on-surface` text inside a child of a
+`primary` container, a spacing token named for one relationship used for another. An agent
+reviews this with the
+[`token-usage-review`](../skills/token-usage-review/SKILL.md) skill.
+
+By default the review covers only **recently changed tokens**. That means token uses in
+rule blocks or markup the change touches, and every use of a token whose value, scopes,
+description, usage-map group, or guideline changed. A `full` option reviews every token
+reference in the codebase, for first adoption, after an overhaul of the guidelines or usage
+map, and before a promotion to production. Layers 1 and 2 always scan everything: they are
+cheap, and `validate` rewrites the whole backlog on each run, so a partial scan would drop
+entries and fail the CI check for a stale backlog.
+
+Its findings are advisory and never gate CI. They live in
+`design-system/token-usage-review.md`, which the agent maintains by hand (it is not
+generated). Each entry is keyed by file, token, and property, with a `Rationale:` line in
+the same form as the backlog.
+
+## Handling deviations
+
+Design-system validation creates and updates a running backlog of deviations,
+`design-system/deviations-backlog.md`. The list serves as a to-do list for future
+agents and clean-up efforts, and as a transparent record of legitimate exceptions. It is
+not a place to hide violations.
+
+### The backlog and its rationale contract
+
+- **Regenerated on every run.** The `validate` command (`npx uxagent validate`) rewrites the
+  backlog from scratch: grouped by file (paths relative to the project root), one entry per deviation giving its line, rule, and detail, with a
+  `Rationale:` line under it. A short header says it is generated and gives counts by
+  rule.
+- **`Rationale:` lines are the one editable part.** Everything else is generated. Before
+  rewriting, the validator parses the previous backlog and carries each rationale forward
+  by matching **file + rule + detail**. Line numbers are not part of the match, so they
+  drift freely. Nobody copies a key by hand.
+- **New deviations get a sentinel.** A deviation with nothing carried forward gets
+  `Unknown — needs review`. Agents write their best guess of why instead; the sentinel
+  stays only when the reason is genuinely unclear, which flags it for the owner.
+- **Fixed or reworded deviations drop their rationale.** When a deviation disappears or its
+  detail text changes, its rationale is dropped on the next run. Because the backlog is
+  tracked in git, the loss shows in `git diff`.
+- **Written only when its content changes.** A run that finds the same deviations and
+  rationale leaves the file untouched, so it never shows up as a spurious diff.
+
+Example entry:
+
+```markdown
+### `<path/to/component>`
+
+- **L86 · local-token-override** — `--<prefix>-color-surface` redefines a namespace token with a literal value: `#221f17`.
+  - Rationale: This overlay always sits on a dark scrim, so the color is pinned to the dark
+    theme's value. No token expresses "always dark".
+- **L87 · raw-spacing** — `padding: 20px` uses a raw length.
+  - Rationale: Unknown — needs review
+```
+
+### Exit codes and CI
+
+- `validate` (`npx uxagent validate`) prints a summary and **exits 0 with deviations present**. Deviations are a
+  warning, not a failure.
+- `validate` **exits 1 when any scoping error exists**, with or without `--strict`, and
+  lists each one with its file, line, and rule.
+- `validate --strict` (`npx uxagent validate --strict`) also exits 1 when any deviation exists, on count alone. It is a
+  local-only flag; CI does not use it.
+- **Rationale never gates.** A deviation with no rationale is reported the same way as one
+  with a full explanation, in both modes.
+- CI runs `validate`, then `git diff --exit-code`. Validation fails CI in two ways only: a
+  **scoping error**, or a **stale backlog** (code changed, the backlog it produces
+  changed, and the committed copy was not updated).
+
+### Working a deviation
+
+The one place these steps are written down; other files link here.
+
+1. Check whether a suitable token exists (search the generated token CSS; never guess a
+   name).
+2. If one does, use it.
+3. If none does, leave the deviation in the backlog and write your best guess of why on
+   its `Rationale:` line. Leave the sentinel `Unknown — needs review` only if the reason
+   is genuinely unclear; that flags it for the owner.
+4. If it is technical debt, log it the same way and add a TODO comment in the code.
+
+The backlog is a transparent record of legitimate exceptions and work in progress, not a
+place to hide violations.
+
+Never disable or loosen a rule, add an ignore comment, or delete a backlog entry to make a
+deviation disappear.

@@ -1,64 +1,61 @@
-# Prototyping kit
+# uxagent
 
-A starting point for designers who prototype with AI agents. Make a prototype from this
-template, ask your agent to run `/setup`, point it at a Figma file, and build the prototype in `Code/` with whatever
-stack suits the project.
+Design-system guardrails and agent skills for building UI with AI agents. Install it in
+any repo, new or existing, ask your agent to run `/ux-setup`, and point it at a Figma
+file.
 
-## The idea
+uxagent adds two folders and some wiring to your repo. Your code stays where it is.
 
-- **`Code/` is disposable.** The prototype can be wiped and rebuilt without disturbing the
-  design sources or the agent context around it. Nothing here assumes a front-end stack;
-  `Code/README.md` maps the command roles (`dev`, `build`, `lint`, …) to the
-  project's real commands.
-- **`Agents/` evolves.** Skills, context, and prompts accumulate as you and your agents
-  learn what works. Every AI tool reads the same material, starting at
-  [`AGENTS.md`](AGENTS.md).
-- **`Docs/` is the source of truth** for design and content: personas, assets, and the
-  design system, including the Figma token exports the prototype is built from.
+## What you get
 
-Every prototype needs a source of truth for tokens. The default is Figma:
+- **`design-system/`** is the source of truth for design: token exports from Figma,
+  written guidelines, the component registry, and a map of what each token is for.
+- **`ux/`** holds how this project uses the design system: one config file, setup
+  progress, example users and organizations, and conventions your agents learn as they
+  work.
+- **Checks that keep the code on the design system.** `npx uxagent validate` finds
+  hardcoded colors, spacing, and type, tokens used for the wrong job, and styles outside
+  their component. What it finds is recorded in a backlog, never silently dropped.
+- **Skills for your agents**: setting up tokens, cataloguing components in Storybook and
+  Figma Code Connect, reviewing token use, and exporting the design system to other AI
+  tools. Claude Code, Cursor, GitHub Copilot, and Gemini all read the same material,
+  starting at `AGENTS.md`.
 
-**Figma → tokens → prototype → capture back to Figma**.
+Every project needs a source of truth for tokens. The default is Figma:
 
-Alternatively, a team can keep tokens in the prototype's repo, or in a separate repository, as the
-source of truth and feed both the prototype and Figma.
+**Figma → tokens → code → capture back to Figma**.
 
-Teams can also use tools other than Figma, as long as the tokens are stored in the prototype's repo.
+A team can instead keep tokens in the repo, or in another repository, and feed both the
+code and Figma. Other design tools work too, as long as the tokens are stored in the repo.
 
-## Folders
+## Install
 
-| Folder    | Purpose                                                                   |
-| --------- | ------------------------------------------------------------------------- |
-| `Code/`   | The entire codebase for the prototype being built.                        |
-| `Docs/`   | Human-level documentation and resources.                                  |
-| `Export/` | Built versions of the prototype, staged for manual transfer to a server.  |
-| `Agents/` | Instructions, skills, context, and prompts for AI agents.                 |
-
-<!-- template-only:start -->
-## Start a new prototype
+uxagent is not on npm yet. Until it is, install it from GitHub. In your repo:
 
 ```bash
-./new-prototype.sh
+npm install -D github:morgankeys/ux-agent
 ```
 
-The script asks for the new prototype's name and where to put it, copies the template's
-committed files into a fresh git repo, and can create and push a GitHub repo for it.
+```bash
+npx uxagent init
+```
 
-The new prototype is standalone: it does not include `new-prototype.sh` or any
-`template-only` sections of the docs, like this one. Its README gets the prototype's name
-and a
-[provenance line](Agents/context/repo-structure.md#provenance) recording which version
-of the template it came from. Then open the new prototype and ask your agent to run the
-`/setup` skill.
+Then ask your agent to run **`/ux-setup`**. It looks at what your repo already has, tells
+you what it needs from you, does the technical work itself, and walks you through the rest
+one step at a time. You don't need to have set up a codebase before.
 
-Bringing later template changes into an existing prototype is not supported yet.
+`init` works out whether this is a new repo or an existing codebase:
 
-<!-- template-only:end -->
-## Getting started
+- **A new repo** gets everything, including a git workflow, a CI skeleton, and lint
+  setup.
+- **An existing codebase** keeps its own git, CI, lint, and pull request conventions.
+  uxagent adds only the design-system parts, and never replaces a file or skill that is
+  already there. `/ux-setup` can suggest improvements to your conventions; nothing
+  changes unless you say yes.
 
-Ask your agent to run **`/setup`**. It looks at what your prototype already has, tells you what
-it needs from you, does the technical work itself, and walks you through the rest one
-step at a time. You don't need to have set up a codebase before.
+To choose yourself, pass `--preset greenfield` or `--preset existing`. If your repo
+already has a `design-system/` folder, pass `--design-system <folder>` to put uxagent's
+somewhere else.
 
 ### What to bring
 
@@ -66,30 +63,62 @@ step at a time. You don't need to have set up a codebase before.
   (the library) and the one with the screens you want to build. Not using Figma is fine;
   say so and the Figma steps are skipped.
 - **Your design tokens.** The colors, type, and spacing from your library, exported from
-  Figma. `/setup` shows you how.
-- **An idea of what you're building**, and who will see it. The agent uses this to
-  recommend how to build it.
-- **Access to your accounts.** You sign in to Figma when the agent connects to it, and
-  your prototype lives in a GitHub repository.
+  Figma. `/ux-setup` shows you how.
+- **An idea of what you're building**, and who will see it.
 - **Content, when you have it.** Example users and organizations, images, and any written
   design guidelines. These can come later.
 
-### The broad strokes
+Most of the tools are optional; tell the agent to skip any you don't want. Rerun
+`/ux-setup` whenever you like to see what is still open.
 
-1. **Point your prototype at your design sources.**
-2. **Choose how the prototype is built.** The agent recommends a setup and installs it.
-3. **Bring in your tokens**, so the prototype matches your design file.
-4. **Add the guardrails**: checks that keep the code on your design system.
-5. **Connect the Figma tools**, so the agent can read your designs and send pages back.
-6. **Build components and catalog them**, so each one is built once and reused.
+## What goes where
 
-Most of the tools are optional; tell the agent to skip any you don't want. Rerun `/setup`
-whenever you like to see what is still open. Progress is kept in `Docs/setup-status.md`,
-and the full list of what a prototype needs is the
-[setup checklist](Agents/skills/setup/checklist.md).
+| In your repo | What | Who changes it |
+| --- | --- | --- |
+| `design-system/`, `ux/` | Your design system and project settings, started from uxagent's templates | You and your agents |
+| The uxagent section of `AGENTS.md`, the skill stubs in `.claude/` and `.cursor/` | Wiring that points agents at uxagent's skills | uxagent (`npx uxagent sync`) |
+| `node_modules/uxagent/` | The skills, reference docs, and the checks themselves | Updates to uxagent |
 
-After setup:
+Because the skills and checks stay in the package, updating them never touches your
+design system or your code.
 
-- New components: ask the agent to add them, then rerun `/component-catalog`.
-- Other tools worth adding: [`Docs/Tooling.md`](Docs/Tooling.md).
-- Managing branches and repo settings: [`Docs/github.md`](Docs/github.md).
+## Updating
+
+```bash
+npm update uxagent
+```
+
+```bash
+npx uxagent sync
+```
+
+Then run `/ux-setup` to pick up anything new.
+
+## Making it yours
+
+- **Skip a skill:** set it to `false` under `skills` in `ux/config.json`, then run
+  `npx uxagent sync`.
+- **Change a skill:** `npx uxagent eject <skill>` copies it into `ux/overrides/`, where
+  it is yours to edit. `npx uxagent restore <skill>` goes back to the packaged one.
+- **Use your own skill instead:** if your repo already has a skill with the same name
+  (your own `/pr`, say), uxagent leaves it in place and doesn't install its own.
+- **Turn off a whole area:** `modules` in `ux/config.json` (tokens, validator, dev-only
+  pages, Figma, component catalog, export, repo conventions).
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `npx uxagent init` | Sets up a repo. Safe to rerun. |
+| `npx uxagent sync` | Refreshes uxagent's wiring after an update or a config change. `--check` only reports. |
+| `npx uxagent doctor` | Checks the install is whole and current. |
+| `npx uxagent validate` | Checks the code against the design system. `--strict` fails on any finding. |
+| `npx uxagent setup` | Reports setup progress. `/ux-setup` uses this. |
+| `npx uxagent export …` | Packages the design system for other AI tools. `/export-design-md` and the `design-system-export` skill use this. |
+| `npx uxagent eject <skill>` / `restore <skill>` | Takes over a packaged skill, or gives it back. |
+
+Needs Node 22.22 or later.
+
+## Working on uxagent
+
+See [`AGENTS.md`](AGENTS.md) and [`docs/architecture.md`](docs/architecture.md).
