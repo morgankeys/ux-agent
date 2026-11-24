@@ -1,0 +1,11 @@
+---
+description: Stories and Code Connect files follow the component catalog contract
+globs: **/*.stories.*, **/*.figma.*, **/figma.config.json, **/.storybook/**
+alwaysApply: false
+---
+
+Auto-attaches when editing stories, Code Connect files, or their config. Before editing,
+read `{{doc:context/component-catalog.md}}`: each story or mapping must match its
+component's row and property mapping in `{{designSystem}}/guidelines/components.md`.
+
+Managed by uxagent; `npx uxagent sync` rewrites this file.

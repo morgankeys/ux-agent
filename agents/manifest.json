@@ -1,0 +1,58 @@
+{
+  "$comment": [
+    "Everything uxagent ships for agents, with the module that carries it. `uxagent sync` renders the project's AGENTS.md block, skill stubs, and Cursor rules from this file.",
+    "`read` is a path under agents/, or `project:<path>` for a file in the project (written with the default layout; sync substitutes the configured design-system folder).",
+    "A route with `skill` is dropped when that skill is opted out, its module is off, or the project has its own skill of that name."
+  ],
+  "skills": [
+    { "name": "ux-setup", "module": "core" },
+    { "name": "design-tokens", "module": "tokens" },
+    { "name": "design-validator", "module": "validator" },
+    { "name": "token-usage-review", "module": "validator" },
+    { "name": "component-catalog", "module": "catalog" },
+    { "name": "export-design-md", "module": "export" },
+    { "name": "design-system-export", "module": "export" },
+    { "name": "editor-setup", "module": "repo" },
+    { "name": "pr", "module": "repo" }
+  ],
+  "routes": [
+    { "when": "`/ux-setup`, setting uxagent up, what is left to install or fill in, or skipping a tool", "read": "skills/ux-setup/SKILL.md", "module": "core", "skill": "ux-setup" },
+    { "when": "What a fully set-up project needs", "read": "skills/ux-setup/checklist.md", "module": "core" },
+    { "when": "Any work in the code (editing, adding, or debugging)", "read": "project:ux/architecture.md", "module": "core" },
+    { "when": "Which real command a role (`dev`, `build`, `validate`, …) maps to", "read": "project:ux/config.json", "note": "`commands`", "module": "core" },
+    { "when": "A convention this project has learned", "read": "project:ux/context/", "module": "core" },
+    { "when": "Styling components, writing CSS, or implementing a page from a design", "read": "context/design-system.md", "module": "core" },
+    { "when": "Design patterns or guidelines: color, type, layout, elevation, shape, motion, accessibility, copy", "read": "project:design-system/guidelines/", "note": "the matching file; index in its `README.md`", "module": "core" },
+    { "when": "Building UI that might already exist as a component", "read": "project:design-system/guidelines/components.md", "module": "core" },
+    { "when": "Tokens or assets that aren't Figma variables", "read": "project:design-system/supplemental/README.md", "module": "core" },
+    { "when": "Example users and organizations, or content assets", "read": "project:ux/personas/", "note": "and `ux/assets/`", "module": "core" },
+    { "when": "Asking the user to do, decide, or provide something, or explaining a step to them", "read": "context/guiding-users.md", "module": "core" },
+    { "when": "A visual glitch, odd build or tooling behavior, or a bug that resists an obvious fix", "read": "context/troubleshooting/README.md", "module": "core" },
+    { "when": "Rounded cards or thumbnails with a scrim, gradient, or border over media", "read": "context/troubleshooting/rounded-clipping.md", "module": "core" },
+    { "when": "Choosing or adding a tool (token converter, linter, Figma capture)", "read": "reference/tooling.md", "module": "core" },
+    { "when": "How uxagent is laid out in this repo, changing or opting out of one of its skills, or updating it", "read": "context/repo-structure.md", "module": "core" },
+    { "when": "Reviewing `ux/` and `design-system/` for drift against the code", "read": "prompts/review-drift.md", "module": "core" },
+    { "when": "Regenerating tokens from a new export, or the alpha transform", "read": "skills/design-tokens/SKILL.md", "module": "tokens", "skill": "design-tokens" },
+    { "when": "Bringing in a new Figma export end to end", "read": "prompts/regenerate-tokens.md", "module": "tokens" },
+    { "when": "Design-system validation, the deviations backlog, or writing a `Rationale:` line", "read": "reference/design-in-code.md", "module": "validator" },
+    { "when": "Whether a token fits its intended use, the token usage map, or `token-*` deviations", "read": "reference/design-in-code.md", "note": "\"Token usage\"", "module": "validator" },
+    { "when": "`/design-validator`, wiring `validate`, or its settings", "read": "skills/design-validator/SKILL.md", "module": "validator", "skill": "design-validator" },
+    { "when": "`/token-usage-review`, or reviewing token use before a pull request that changes styles", "read": "skills/token-usage-review/SKILL.md", "module": "validator", "skill": "token-usage-review" },
+    { "when": "Adding a sandbox, test, specimen, or sample page, or anything under a `dev/` pages folder", "read": "context/dev-only-pages.md", "module": "dev-pages" },
+    { "when": "Adding a component, a story, or a Code Connect file", "read": "context/component-catalog.md", "module": "catalog" },
+    { "when": "`/component-catalog`, turning on Storybook or Code Connect, or the first components", "read": "skills/component-catalog/SKILL.md", "module": "catalog", "skill": "component-catalog" },
+    { "when": "`/export-design-md`, or a portable DESIGN.md for another AI tool", "read": "skills/export-design-md/SKILL.md", "module": "export", "skill": "export-design-md" },
+    { "when": "Exporting the design system to Lovable, Replit, Bolt.new, v0, or Figma Make", "read": "skills/design-system-export/SKILL.md", "module": "export", "skill": "design-system-export" },
+    { "when": "How those platforms ingest a design system", "read": "context/design-system-platforms.md", "module": "export" },
+    { "when": "Creating a branch, committing, or separating tracks of work", "read": "context/git-workflow.md", "module": "repo" },
+    { "when": "`/pr`: commit, push, and open a pull request", "read": "skills/pr/SKILL.md", "module": "repo", "skill": "pr" },
+    { "when": "Repo settings, promoting to production, or branch cleanup", "read": "reference/github.md", "module": "repo" },
+    { "when": "`/editor-setup`, files showing as plain text or without lint underlines in the editor", "read": "skills/editor-setup/SKILL.md", "module": "repo", "skill": "editor-setup" }
+  ],
+  "cursorRules": [
+    { "name": "design-system", "module": "core" },
+    { "name": "component-catalog", "module": "catalog" },
+    { "name": "dev-only-pages", "module": "dev-pages" },
+    { "name": "git-workflow", "module": "repo" }
+  ]
+}

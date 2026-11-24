@@ -1,27 +1,4 @@
-# Environment files: keep the example, ignore real values
-.env
-.env.*
-!.env.example
-
-# Project-specific: add this stack's dependency folders, build output, and caches here,
-# for example:
-# Code/<dependency folder>/
-# Code/<build output>/
-# Code/<generated token CSS folder>/
-# Code/storybook-static/
-
-# OS / editor cruft
+node_modules/
 .DS_Store
 Thumbs.db
-
-# Cursor: track shared project rules and skills, ignore everything else
-# (MCP configs and local state may contain tokens or machine-specific paths)
-.cursor/*
-!.cursor/rules/
-!.cursor/skills/
-
-# Generated platform packages. Regenerate with `npm run ds-export`.
-Export/design-system/
-
-# Test dependencies for the reference design-system validator (Agents/skills/design-validator)
-Agents/skills/design-validator/node_modules/
+*.tgz

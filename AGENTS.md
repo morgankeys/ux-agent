@@ -1,152 +1,52 @@
 # AGENTS.md
 
-Front door for any AI agent working in this repo. Read this first, then load
-what you need from `Agents/`.
+This repo is **uxagent**, an npm package that installs design-system guardrails and agent
+skills into any repo. You are working on the package itself, not in a project that uses
+it.
 
-## What this repo is
+Read [`docs/architecture.md`](docs/architecture.md) before changing anything. It covers
+the package layout, what a project looks like after `npx uxagent init`, the three kinds of
+file (managed, seeded, ejected), the config, and the rules for writing the docs that ship.
 
-Either the prototyping-kit **template** (the master copy, which has `new-prototype.sh`) or a
-**prototype** made from it and set up for one project. Most of what follows applies to
-both. Work is organized into four top-level, peer folders:
+## Where things are
 
-| Folder     | Purpose                                                                    |
-| ---------- | ------------------------------------------------------------------------- |
-| `Code/`    | The entire codebase for the prototype being built.                        |
-| `Docs/`    | Human-level documentation and resources.                                  |
-| `Export/`  | Built versions of the prototype, staged for manual transfer to a server. |
-| `Agents/`  | Instructions, skills, context, and prompts for AI agents (this material). |
-
-You may read and manage **all four** folders, not just `Code/`.
-
-<!-- template-only:start -->
-## This is the template
-
-This repo is the prototyping-kit **template**. `new-prototype.sh` at the repo root copies
-it into a fresh, standalone repo for one prototype (it asks for the new repo's name).
-
-- Run it when someone wants a new prototype: `./new-prototype.sh`. It is a plain script,
-  not a skill.
-- It is **not copied** into the new prototype, and neither is the template's own CI
-  (`.github/workflows/template.yml` and `.github/template-checks/`) or this section:
-  anything between `template-only:start` / `template-only:end` HTML comments in a
-  Markdown file is stripped from the copy. Wrap any future template-only notes the same
-  way.
-- The template's CI fails if someone starts setting up a prototype here: a stack in
-  `Code/`, a filled-in placeholder, or a setup status file. Setup happens in a prototype.
-- In a prototype there is no `new-prototype.sh`. Don't recreate it there; new prototypes
-  come from the template.
-- The copy's `README.md` gets the prototype's name and the provenance line described in
-  `Agents/context/repo-structure.md`.
-
-<!-- template-only:end -->
-## Where to look
-
-- **Skills** — reusable capabilities: `Agents/skills/`
-- **Context** — conventions, architecture, background to load before acting: `Agents/context/`
-- **Prompts** — task templates and reusable prompts: `Agents/prompts/`
-- **Index** — what's available and when to use it: `Agents/README.md`
-
-## Context loading: on-demand vs always
-
-Load deep context **on demand** to keep token costs down. If your task involves the left
-column, read the right column first.
-
-<!-- Add a row whenever the project gains a doc or skill an agent should load for a task. -->
-
-| If your task involves... | Read this first |
+| Folder | What |
 | --- | --- |
-| Creating a branch, committing, or separating tracks of work | `Agents/context/git-workflow.md` |
-| `/pr` — commit, push, and open a pull request | `Agents/skills/pr/SKILL.md` |
-| Repo settings, promoting to production, or branch cleanup | `Docs/github.md` |
-| Any work in `Code/` (editing, adding, or debugging code) | `Code/ARCHITECTURE.md` |
-| Quick commands, getting started, or which real command a role (`dev`, `build`, …) maps to | `Code/README.md` |
-| Styling components, writing CSS, or implementing a page from a design | `Agents/context/design-system.md` |
-| Rounded cards or thumbnails with a scrim, gradient, or border over media | `Agents/context/troubleshooting/rounded-clipping.md` |
-| A visual glitch, odd build or tooling behavior, or a bug that resists an obvious fix | `Agents/context/troubleshooting/README.md` |
-| Design patterns or guidelines: color, type, layout, elevation, shape, motion, accessibility, copy | The matching file in `Docs/Design system/Guidelines/` (index: its `README.md`) |
-| Building UI that might already exist as a component | `Docs/Design system/Guidelines/components.md` |
-| Adding a component, a story, or a Code Connect file | `Agents/context/component-catalog.md` |
-| `/component-catalog`, turning on Storybook or Code Connect, or the first components after choosing a stack | `Agents/skills/component-catalog/SKILL.md` |
-| Asking the user to do, decide, or provide something, or explaining a step to them | `Agents/context/guiding-users.md` |
-| `/setup`, setting up a new prototype, what is left to install or fill in, or skipping a tool | `Agents/skills/setup/SKILL.md` |
-| What a fully set-up prototype needs, or adding a setup item or a placeholder to the template | `Agents/skills/setup/checklist.md` |
-| `/editor-setup`, files showing as plain text or without lint underlines in the editor, or opening the repo in a new editor | `Agents/skills/editor-setup/SKILL.md` |
-| Tokens or assets that aren't Figma variables | `Docs/Design system/Supplemental/README.md` |
-| `/export-design-md`, or a portable DESIGN.md for another AI tool | `Agents/skills/export-design-md/SKILL.md` |
-| Exporting the design system to Lovable, Replit, Bolt.new, v0, or Figma Make | `Agents/skills/design-system-export/SKILL.md` |
-| Regenerating tokens from a new export, or the alpha transform | `Agents/skills/design-tokens/SKILL.md` |
-| Bringing in a new Figma export end to end | `Agents/prompts/regenerate-tokens.md` |
-| Design-system validation, the deviations backlog, or writing a `Rationale:` line | `Docs/Design system/design-in-code architecture.md` |
-| `/design-validator`, installing `validate` in a prototype, or adapting the validator to a framework | `Agents/skills/design-validator/SKILL.md` |
-| Whether a token fits its intended use, the token usage map, or `token-*` deviations | "Token usage" in `Docs/Design system/design-in-code architecture.md` |
-| `/token-usage-review` (changed tokens by default, `full` for everything), or reviewing token use before a pull request that changes styles | `Agents/skills/token-usage-review/SKILL.md` |
-| Adding a sandbox, test, specimen, or sample page, or anything under a `dev/` pages folder | `Agents/context/dev-only-pages.md` |
-| Choosing or adding a tool (token converter, linter, Figma capture) | `Docs/Tooling.md` |
-| Starting a prototype from the template, provenance, or comparing a prototype with the template | `Agents/context/repo-structure.md` |
-| Reviewing `Docs/` and `Agents/` for drift against `Code/` | `Agents/prompts/review-drift.md` |
+| `src/` | The CLI: config loader, installer (`init`, `sync`, `doctor`, `eject`), validator, exports, setup scan. |
+| `agents/` | What agents in a project read: skills, context, prompts, reference. Listed in `agents/manifest.json`. |
+| `templates/` | What `init` seeds into a project, and the templates `sync` renders. |
+| `schema/` | The JSON schema for `ux/config.json`. |
+| `test/` | `node --test` suites, and the doc checks in `test/docs/`. |
 
-When a `.cursor/rules/*.mdc` file auto-attaches because you're editing a relevant file,
-trust it — it has the just-in-time rules you need.
+## Rules
 
-## Non-negotiable rules
+1. **`agents/` and `templates/` describe a project, not this repo.** Their paths
+   (`ux/architecture.md`, `design-system/guidelines/`) are paths in a project. Follow
+   "Writing the docs" in `docs/architecture.md`.
+2. **No project paths in code.** Ask `loadConfig()` (`src/config/load.mjs`).
+3. **Adding, renaming, or removing a file under `agents/`** means updating
+   `agents/manifest.json` in the same change.
+4. **A new placeholder in a seeded file** gets a stub row in
+   `agents/skills/ux-setup/checklist.md` in the same change.
+5. **The validator and its contract change together** (see "Changing the validator" in
+   `docs/architecture.md`).
+6. **Never make `sync` overwrite a file it did not write**, and never make it rewrite a
+   seeded file. Projects trust it with their repo.
 
-These apply across all tasks. They are phrased as portable principles so they survive file
-moves and reuse.
+## Checks
 
-1. **Never hand-edit generated files.** If a file's header says `GENERATED` or `do not edit
-   by hand`, regenerate it with the documented command instead. The one carve-out: where a
-   generated file reserves fields for human and agent notes, those fields are meant to be
-   edited and are read back on the next run (for example, the `Rationale:` lines in the
-   design-system deviations backlog).
-2. **Never weaken lint or validation rules to suppress design-system deviations.**
-   `validate` reports them. Fix the root cause or log the deviation in the backlog — do
-   not disable or loosen a rule, add an ignore comment, or widen the token usage map, in
-   the validator or in any linter. When you log one, write your best guess of why on its
-   rationale line; leave the "needs review" sentinel only when the reason is genuinely
-   unclear.
-3. **Component styles are scoped and token-driven.** No inline styles, no hardcoded
-   color, spacing, or radius. A style is either global (in the global stylesheet) or a
-   component's (in its scoped block), never in the other's place; `validate` fails when
-   one is. Never weaken that check or add to the allowed global classes list to clear it.
-4. **Keep tracks of work organized.** A new thread starts a new branch from an up-to-date
-   `main`. Use another base only when the user specifies one, and stay on the current
-   branch only when the user says to keep working on it. If the repo is already dirty
-   with work this chat did not create, ask what to do and leave that work untouched.
-   Once the branch for this chat is clear, commit and push without a separate ask. Never
-   commit directly to `main` or `staging` unless this chat was told to work on that
-   branch. Opening a pull request still waits for an ask; `/pr` is that ask.
-5. **Sandbox, specimen, and sample pages never ship.** They render only on the local dev
-   server. Never weaken whatever build check enforces this.
-6. **The token pipeline must preserve alpha.** A translucent token must come out of the
-   pipeline translucent, and the build includes a regression guard that fails when one
-   doesn't. Never simplify, remove, or bypass that guard; fix the transform. Why and how:
-   "the alpha gotcha" in `Agents/skills/design-tokens/SKILL.md`.
+Run both before committing:
 
-## Operating notes
+```bash
+npm test
+```
 
-- This repo is for designers, many of whom have not set up a codebase before. Lead them
-  through anything they have to do themselves, in plain words, one step at a time, and do
-  the technical work for them. See `Agents/context/guiding-users.md`.
+```bash
+npm run test:docs
+```
 
-- Checks always run: `lint`, `check`, `build`, `validate`, and the token usage review are
-  never skipped or switched off. What happens to a finding depends on its kind:
-  - **Technical problems** (formatting, code lint, invalid CSS, type errors, a failing
-    build, a broken install): fix them yourself and carry on. They are not recorded
-    anywhere and the user doesn't need to hear about each one. Tell the user only when
-    the fix is risky: it could change how the prototype looks or behaves, removes or
-    rewrites their work, needs a decision, or you can't find one.
-  - **Design problems** (design-system deviations, token misuse): these come only from
-    `validate` and the token usage review, never from `lint`, and never fail CI once
-    recorded ("Validation and linting" in
-    `Docs/Design system/design-in-code architecture.md`). Fix the clear ones. For the
-    rest, tell the user what was found and ask whether to fix them now or carry on.
-    Either way they stay recorded in the deviations backlog or the token usage review
-    file, never dropped.
-  - **Scoping errors** (a style outside its global or component home) are the one design
-    finding that fails `validate` and CI. Fix them before carrying on; ask the user only
-    when it is unclear whether a style should apply everywhere.
-- Keep `Code/`, `Docs/`, and `Export/` in sync when a change spans them (e.g. a new
-  feature usually touches code, docs, and eventually an export).
-- Treat `Export/` as an output drop zone: write built artifacts there, don't hand-edit them.
-- When you learn a durable convention, record it in `Agents/context/` so the next agent
-  inherits it.
+To try the package in a real project, pack it and install the tarball in a scratch repo:
+
+```bash
+npm pack
+```
